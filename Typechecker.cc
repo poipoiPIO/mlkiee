@@ -111,6 +111,15 @@ void Typechecker::assignTNames(AstE* node, SymTab& symtab) {
     return;
   }
 
+  AstAssign* AssignCheck = dynamic_cast<AstAssign*>(node);
+
+  if(AssignCheck) {
+    node->type = getTName();
+    symtab.insert({AssignCheck->name, TVar(node->type)});
+    assignTNames(AssignCheck->value, symtab);
+    return;
+  }
+
   AstIf* IfCheck = dynamic_cast<AstIf*>(node);
   if(IfCheck) { assignNamesHelper(IfCheck, symtab); return; }
 
@@ -165,8 +174,8 @@ void Typechecker::genUnaryEEquations(AstUnary* node) {
 }
 
 void Typechecker::genBinaryEEquations(AstBinary* BinaryCheck) {
-    BinaryCheck->traverseChild([this](AstE* node){
-      genEquations(node);
+    BinaryCheck->traverseChild([this](AstE* c){
+      genEquations(c);
     });
 
     auto arithm_binop = std::array<std::string, 4> {"+", "-", "*", "/"};
@@ -188,11 +197,14 @@ void Typechecker::genBinaryEEquations(AstBinary* BinaryCheck) {
 }
 
 void Typechecker::genFCallEEquations(AstFCall* FCallCheck) {
+  genEquations(FCallCheck->name);
   genEquations(FCallCheck->value);
-  tEquations.push_back(TEquation(FCallCheck->name->type, new TInt(), FCallCheck));
-  tEquations.push_back(TEquation(FCallCheck->value->type, new TInt(), FCallCheck));
 
-  tEquations.push_back(TEquation(FCallCheck->type, new TInt(), FCallCheck));
+  tEquations.push_back(TEquation(
+        FCallCheck->type, 
+        new TFoo(stringToType(FCallCheck->name->type),
+          stringToType(FCallCheck->value->type)),
+        FCallCheck));
 }
 
 void Typechecker::genIfEEquations(AstIf* IfCheck) {
@@ -202,14 +214,11 @@ void Typechecker::genIfEEquations(AstIf* IfCheck) {
 
   tEquations.push_back(TEquation(IfCheck->cond->type, new TBool(), IfCheck));
 
-  tEquations.push_back(TEquation(
-        IfCheck->true_brunch->type,
+  tEquations.push_back(TEquation( IfCheck->type,
         stringToType(IfCheck->true_brunch->type), IfCheck));
 
-  tEquations.push_back(TEquation(
-        IfCheck->false_brunch->type,
+  tEquations.push_back(TEquation( IfCheck->type,
         stringToType(IfCheck->true_brunch->type), IfCheck));
-
 }
 
 void Typechecker::genFunEEquations(AstFunction* FunctionCheck) {
@@ -242,6 +251,16 @@ void Typechecker::genEquations(AstE* node) {
 
   AstFCall* FCallCheck = dynamic_cast<AstFCall*>(node);
   if(FCallCheck) { genFCallEEquations(FCallCheck); return; }
+
+  AstAssign* AssignCheck = dynamic_cast<AstAssign*>(node);
+  if(AssignCheck) {
+    genEquations(AssignCheck->value);
+
+    tEquations.push_back(
+        TEquation(AssignCheck->type,
+        stringToType(AssignCheck->value->type), AssignCheck));
+    return;
+  }
 
   AstIf* IfCheck = dynamic_cast<AstIf*>(node);
   if(IfCheck) { genIfEEquations(IfCheck); return; }

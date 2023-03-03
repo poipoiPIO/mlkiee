@@ -70,6 +70,7 @@ BooleanSubExpr: Bool
 
 Bool: TRUE { $$ = new AstVal("TRUE"); }
   | FALSE  { $$ = new AstVal("FALSE"); }
+  | ATOM { $$ = new AstVal($1); }
 ;
 
 %%
