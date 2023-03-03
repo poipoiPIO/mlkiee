@@ -4,12 +4,14 @@
 
 AstE::~AstE() {};
 AstE::AstE() {};
+AstE::AstE(const std::string& t) : type(t) {};
 
 std::ostream& operator<<(std::ostream& os, const AstE& t) { 
   return os;
 }
 
 AstVal::AstVal(const std::string& val) : value(val) {}
+AstVal::AstVal(const std::string& val, const std::string& t) : value(val), AstE(t) {}
 
 template <typename T, typename = typename std::enable_if<std::is_base_of<T, AstE>::value>::type>
 std::ostream& operator<<(std::ostream& os, const T& t) {
@@ -17,19 +19,13 @@ std::ostream& operator<<(std::ostream& os, const T& t) {
 }
 
 void AstVal::print(std::ostream& os) const {
-  os << "(AstVal val: " << value << ")";
-}
-
-AstBool::AstBool(const std::string& val) : AstVal(val) {}
-
-void AstBool::print(std::ostream& os) const {
-  os << "(AstBool val: " << value << ")";
+  os << "(AstVal :type " << type << " val: " << value << ")";
 }
 
 AstUnary::AstUnary(const std::string& op, AstE* val) : op(op), value(val) {}
 
 void AstUnary::print(std::ostream& os) const { 
-  os << "(AstUnary op: " << op << " value: ";
+  os << "(AstUnary type: " << type << " op: " << op << " value: ";
   value->print(os);
   os << ")"; 
 }
@@ -38,33 +34,39 @@ AstBinary::AstBinary(const std::string& op, AstE* left, AstE* right)
   : op(op), left(left), right(right) {}
 
 void AstBinary::print(std::ostream& os) const {
-  os << "(AstBinary op: " << op << " left: ";
+  os << "(AstBinary type: " << type << " op: " << op << " left: ";
   left->print(os); 
   os << " right: ";
   right->print(os);
   os << ")";
 }
 
+void AstBinary::traverseChild(std::function<void(AstE*)> fun) { fun(left); fun(right); }
+
 AstAssign::AstAssign(const std::string& name, AstE* val) : value(val), name(name) {}
 
 void AstAssign::print(std::ostream& os) const {
-  os << "(AstAssign name: " << name << " value: ";
+  os << "(AstAssign type: " << type << " name: " << name << " value: ";
   value->print(os);
   os << ")";
 }
 
-AstFunction::AstFunction(const std::string& arg, AstE* val) : value(val), arg(arg) {}
+AstFunction::AstFunction(AstE* arg, AstE* val) : value(val), arg(arg) {}
 
 void AstFunction::print(std::ostream& os) const {
-  os << "(AstFunction arg: " << arg << " body: ";
+  os << "(AstFunction type: " << type << " arg: ";
+  arg->print(os);
+  os << " body: ";
   value->print(os);
   os << ")";
 }
 
-AstFCall::AstFCall(const std::string& name, AstE* val) : value(val), name(name) {}
+AstFCall::AstFCall(AstE* name, AstE* val) : value(val), name(name) {}
 
 void AstFCall::print(std::ostream& os) const {
-  os << "(AstFCall name: " << name << " value: ";
+  os << "(AstFCall type: " << type << " name: ";
+  name->print(os);
+  os << " value: ";
   value->print(os);
   os << ")";
 }
@@ -73,7 +75,7 @@ AstIf::AstIf(AstE* cond, AstE* t_branch, AstE* f_branch):
   cond(cond), true_brunch(t_branch), false_brunch(f_branch) {}
 
 void AstIf::print(std::ostream& os) const { 
-  os << "(AstIf cond: ";
+  os << "(AstIf type: " << type << " cond: ";
   cond->print(os); 
   os << " true: ";
   true_brunch->print(os); 
@@ -81,6 +83,13 @@ void AstIf::print(std::ostream& os) const {
   false_brunch->print(os);
   os << ")";
 }
+
+void AstIf::traverseChild(std::function<void(AstE*)> fun) {
+  fun(cond);
+  fun(true_brunch);
+  fun(false_brunch);
+}
+
 
 Block::Block(AstE* op) {
   exprs = std::list<AstE*>();

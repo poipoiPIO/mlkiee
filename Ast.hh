@@ -1,10 +1,18 @@
+#pragma once
+
 #include <string>
 #include <list>
+#include <functional>
 
 struct AstE {
+  std::string type;
+
+  AstE(const std::string& type);
   AstE();
   virtual ~AstE();
+
   virtual void print(std::ostream& os) const = 0;
+
   friend std::ostream& operator<<(std::ostream& os, const AstE& dt);
 };
 
@@ -12,17 +20,11 @@ struct AstVal : AstE {
   std::string value;
   
   AstVal(const std::string& val);
+  AstVal(const std::string& val, const std::string& t);
   
   friend std::ostream& operator<<(std::ostream& os, const AstVal& dt);
 
   virtual void print(std::ostream& os) const override;
-};
-
-struct AstBool: AstVal {
-  AstBool(const std::string& val);
-
-  friend std::ostream& operator<<(std::ostream& os, const AstBool& dt);
-  void print(std::ostream& os) const override;
 };
 
 struct AstUnary : AstE {
@@ -32,6 +34,7 @@ struct AstUnary : AstE {
   AstUnary(const std::string& op, AstE* value);
 
   friend std::ostream& operator<<(std::ostream& os, const AstUnary& dt);
+
   void print(std::ostream& os) const override;
 };
 
@@ -44,6 +47,7 @@ struct AstBinary : AstE {
   friend std::ostream& operator<<(std::ostream& os, const AstBinary& dt);
 
   void print(std::ostream& os) const override;
+  void traverseChild(std::function<void(AstE*)>);
 };
 
 struct AstAssign : AstE {
@@ -58,9 +62,9 @@ struct AstAssign : AstE {
 
 struct AstFunction : AstE {
   AstE* value;
-  std::string arg;
+  AstE* arg;
 
-  AstFunction(const std::string& arg, AstE* value);
+  AstFunction(AstE* arg, AstE* value);
   friend std::ostream& operator<<(std::ostream& os, const AstFunction& dt);
 
   void print(std::ostream& os) const override;
@@ -68,9 +72,9 @@ struct AstFunction : AstE {
 
 struct AstFCall : AstE {
   AstE* value;
-  std::string name;
+  AstE* name;
 
-  AstFCall(const std::string& name, AstE* value);
+  AstFCall(AstE* name, AstE* value);
   friend std::ostream& operator<<(std::ostream& os, const AstFCall& dt);
 
   void print(std::ostream& os) const override;
@@ -84,6 +88,7 @@ struct AstIf : AstE {
   AstIf(AstE* cond, AstE* if_true, AstE* if_false);
   friend std::ostream& operator<<(std::ostream& os, const AstIf& dt);
   void print(std::ostream& os) const override;
+  void traverseChild(std::function<void(AstE*)>);
 };
 
 struct Block : AstE {
@@ -93,6 +98,7 @@ struct Block : AstE {
 
   Block(AstE* op);
   Block(AstE* op, AstE* op2);
+
   virtual ~Block();
   friend std::ostream& operator<<(std::ostream& os, const Block& dt);
   void print(std::ostream& os) const override;

@@ -22,16 +22,12 @@ and             return AND;
 or              return OR;
 
 [0-9]+          {
-  if(yylval.str) free(yylval.str);
-
   yylval.str = strdup(yytext);
   return NUM;
 }
 
 ->              return ARROW;
 [a-zA-Z_][a-zA-Z0-9_]* { 
-  if(yylval.str) free(yylval.str);
-
   yylval.str = strdup(yytext);
   return ATOM;
 }

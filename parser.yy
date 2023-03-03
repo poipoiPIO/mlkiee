@@ -6,6 +6,8 @@
     extern "C" int yylex(void);
     extern "C" void yyerror(const char *s);
 
+    AstE* result;
+
     
     extern "C" void yyerror(const char * str) {
         std::cerr << "Error parsing: " << str << std::endl;
@@ -27,7 +29,7 @@
 
 %%
 
-Program: Statement { $1->print(std::cout); delete $1;};
+Program: Statement { result = $1; };
 
 Statement: Expr ';' 
   | Expr ';' Statement { $$ = new Block($1, $3); }
@@ -35,8 +37,8 @@ Statement: Expr ';'
 
 Expr: ArithmExpr
   | BooleanExpr
-  | ATOM '.' Expr { $$ = new AstFCall($1, $3); }
-  | '\\' ATOM ARROW Expr { $$ = new AstFunction($2, $4); }
+  | ATOM '.' Expr { $$ = new AstFCall(new AstVal($1), $3); }
+  | '\\' ATOM ARROW Expr { $$ = new AstFunction(new AstVal($2), $4); }
   | LET ATOM ARROW Expr { $$ = new AstAssign($2, $4); }
   | IF Expr ARROW Expr ELSE Expr { $$ = new AstIf($2, $4, $6); }
 ;
@@ -66,12 +68,8 @@ BooleanSubExpr: Bool
 	| NOT Bool  { $$ = new AstUnary("NOT", $2); }
 ;
 
-Bool: TRUE { $$ = new AstBool("TRUE"); }
-  | FALSE  { $$ = new AstBool("FALSE"); }
+Bool: TRUE { $$ = new AstVal("TRUE"); }
+  | FALSE  { $$ = new AstVal("FALSE"); }
 ;
 
 %%
-
-int main() {
-  return yyparse();
-}

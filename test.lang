@@ -1,8 +1,3 @@
-12;
-meow;
-\x -> x * 2;
+\x -> 12 + x;
 
-if true or false -> 12 else 14;
-\x -> if true -> x else 42;
-
-let meow -> if true -> x else 42;
+owo;
