@@ -2,6 +2,7 @@
 #include <exception>
 #include <iostream>
 #include <algorithm>
+#include <ostream>
 #include <string>
 #include <array>
 
@@ -184,14 +185,14 @@ void Typechecker::genBinaryEEquations(AstBinary* BinaryCheck) {
           std::end(arithm_binop), BinaryCheck->op) != std::end(arithm_binop)) {
 
       tEquations.push_back(TEquation(BinaryCheck->left->type, new TInt(), BinaryCheck));
-      tEquations.push_back(TEquation(BinaryCheck->left->type, new TInt(), BinaryCheck));
+      tEquations.push_back(TEquation(BinaryCheck->right->type, new TInt(), BinaryCheck));
 
       tEquations.push_back(TEquation(BinaryCheck->type, new TInt(), BinaryCheck));
       return;
     } 
 
     tEquations.push_back(TEquation(BinaryCheck->left->type, new TBool(), BinaryCheck));
-    tEquations.push_back(TEquation(BinaryCheck->left->type, new TBool(), BinaryCheck));
+    tEquations.push_back(TEquation(BinaryCheck->right->type, new TBool(), BinaryCheck));
 
     tEquations.push_back(TEquation(BinaryCheck->type, new TBool(), BinaryCheck));
 }
@@ -271,3 +272,183 @@ void Typechecker::genEquations(AstE* node) {
   AstFunction* FunctionCheck = dynamic_cast<AstFunction*>(node);
   if(FunctionCheck) { genFunEEquations(FunctionCheck); return; }
 }
+
+// TODO:: make separated virtual methods
+bool TEquals(const T* x, const T* y) {
+  bool boolP = dynamic_cast<const TBool*>(x) && dynamic_cast<const TBool*>(y),
+       intP  = dynamic_cast<const TInt*>(x) && dynamic_cast<const TInt*>(y),
+       fooP = false, varP = false;
+
+  const TVar* varX = dynamic_cast<const TVar*>(x),
+        *varY = dynamic_cast<const TVar*>(y);
+
+  if(varX && varY) {
+    varP = (varX->type) == (varY->type);
+  }
+
+  const TFoo* fooX = dynamic_cast<const TFoo*>(x),
+        *fooY =  dynamic_cast<const TFoo*>(y);
+
+  if(fooX && fooY) {
+    fooP = TEquals(fooX->argType, fooY->argType) && TEquals(fooX->retType, fooY->retType); 
+  }
+
+  return boolP || intP || fooP || varP;
+}
+
+bool Typechecker::checkOccurance(T* v, T* t, Substitution& subst) {
+  if(TEquals(v, t)) { 
+    return true;
+  }
+
+  if(TVar* varT = dynamic_cast<TVar*>(t)) {
+    auto lookupT = subst.find(varT->type);
+
+    if (lookupT != subst.end()) {
+      return checkOccurance(v, lookupT->second, subst);
+    } 
+  } 
+
+  if(TFoo* fooT = dynamic_cast<TFoo*>(t)) {
+    return checkOccurance(v, fooT->retType, subst)
+      || checkOccurance(v, fooT->argType, subst);
+  }
+  return false;
+}
+
+Substitution& Typechecker::unifyVar(T* v, T* typeY, Substitution& subst) {
+  TVar* varX = dynamic_cast<TVar*>(v), *varY = dynamic_cast<TVar*>(typeY);
+  
+  if (!varX) {
+    std::cerr << "Something weird happend :: excepted type Var, but: ";
+    v->print(std::cerr);
+    std::cerr << " was occured!!" << std::endl;
+    throw std::exception();
+  }
+
+  auto lookupX = subst.find(varX->type);
+  if (lookupX != subst.end()) {
+    return unify(lookupX->second, typeY, subst);
+  } 
+
+  if(varY) {
+    auto lookupY = subst.find(varY->type);
+    if (lookupY != subst.end()) {
+      return unify(v, lookupY->second, subst);
+    }
+  } 
+
+  if (checkOccurance(v, typeY, subst)) {
+    throw TypeError();
+  }
+
+  subst.insert({varX->type, typeY});
+  return subst;
+}
+
+Substitution& Typechecker::unify(T* typeX, T* typeY, Substitution& subst) {
+  if(TEquals(typeX, typeY)) { return subst; } 
+
+  if (dynamic_cast<TVar*>(typeX)) {
+    return unifyVar(typeX, typeY, subst);
+  } 
+
+  if (dynamic_cast<TVar*>(typeY)) {
+    return unifyVar(typeY, typeX, subst);
+  }
+
+  TFoo* fooX = dynamic_cast<TFoo*>(typeX),
+       *fooY = dynamic_cast<TFoo*>(typeY);
+
+  if (fooX && fooY) {
+    subst = unify(fooX->retType, fooY->retType, subst);
+    subst = unify(fooX->retType, fooY->retType, subst);
+    return subst;
+  }
+
+  std::cerr << "WrongType: cannot provide substitution for equations!" << std::endl;
+  throw std::exception();
+}
+
+Substitution& Typechecker::unifyAll() {
+  tSubst = Substitution();
+
+  for (auto& e : tEquations) {
+    std::cerr << "Trying to unify: ";
+    e.print(std::cerr);
+    std::cerr << std::endl;
+
+    try {
+      std::cerr << "Left:: " << e.left << std::endl << "right:: ";
+      e.right->print(std::cerr);
+      std::cerr << std::endl;
+
+      tSubst = unify(stringToType(e.left), e.right, tSubst);
+    } catch (TypeError t) {
+      std::cerr << "TypeError :: cannot unify expr: ";
+      e.print(std::cerr);
+      std::cerr << std::endl;
+      throw TypeError();
+    }
+
+    auto lookup = tSubst.find(e.left);
+    if(lookup != tSubst.end()) {
+      std::cerr << "type unified to: ";
+      lookup->second->print(std::cerr);
+      std::cerr << std::endl;
+    }
+    
+  }
+
+  return tSubst;
+}
+
+T* Typechecker::doUnify(T* t, Substitution& subst) {
+  if (subst.empty() || dynamic_cast<TBool*>(t) || dynamic_cast<TInt*>(t)) {
+    return t;
+  } if (auto varT = dynamic_cast<TVar*>(t)) {
+    auto lookup = subst.find(varT->type);
+    if (lookup != subst.end()) {
+      return doUnify(lookup->second, subst);
+    } else {
+      return t;
+    }
+  } if (auto fooT = dynamic_cast<TFoo*>(t)) {
+    return new TFoo(doUnify(fooT->argType, subst),
+        doUnify(fooT->retType, subst));
+  } 
+
+  std::cerr << "WrongType : cannot provide substitution for expression of type!";
+  t->print(std::cerr);
+  std::cerr << std::endl;
+  throw std::exception();
+}
+
+void reassignNames(T* t, int& counter, SymTab& local_sym) {
+    if(auto varT = dynamic_cast<TVar*>(t)) {
+      SymTab::iterator lookup = local_sym.find(varT->type);
+
+      if (lookup != local_sym.end()) {
+        varT->type = lookup->second.type;
+      } else {
+        std::string name = std::string("t").append(std::to_string(counter++));
+
+        local_sym.insert({varT->type, TVar(name)});
+        local_sym.insert({name, TVar(name)});
+        varT->type = local_sym.find(name)->second.type;
+      }
+    } if(auto fooT = dynamic_cast<TFoo*>(t)) {
+      reassignNames(fooT->argType, counter, local_sym);      
+      reassignNames(fooT->retType, counter, local_sym);      
+    }
+}
+
+T* Typechecker::getType(AstE* exp, Substitution& subst) {
+  int counter = 0;
+  SymTab local_sym = SymTab();
+  T* type = doUnify(stringToType(exp->type), subst); 
+  reassignNames(type, counter, local_sym);
+
+  return type;
+}
+

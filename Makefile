@@ -13,16 +13,16 @@ lex.yy.o: lex.yy.c parser.tab.hh
 	clang -c lex.yy.c -O2
 
 Ast.o: Ast.cc Ast.hh
-	clang++ -c Ast.cc -O2
+	clang++ -c -ggdb Ast.cc -O2
 
 main.o: main.cc
-	clang++ -c main.cc -O2
+	clang++ -c -ggdb main.cc -O2
 
 Typechecker.o: Typechecker.hh Typechecker.cc
-	clang++ -c Typechecker.cc -O2
+	clang++ -c -ggdb Typechecker.cc -O2
 
 parser: lex.yy.o parser.tab.cc parser.tab.hh Ast.hh Typechecker.o Ast.o main.o
-	clang++ -o parser main.o Ast.o Typechecker.o parser.tab.cc lex.yy.o -O2 
+	clang++ -o parser main.o Ast.o Typechecker.o parser.tab.cc lex.yy.o -O2 -ggdb 
 
 clean:
 	rm lex.yy.c *.tab.* parser *.o

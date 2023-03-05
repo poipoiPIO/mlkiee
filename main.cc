@@ -6,6 +6,7 @@ extern int yyparse();
 extern AstE* result;
 
 int main() {
+
   yyparse();
 
   Typechecker typeChecker = Typechecker();
@@ -23,6 +24,10 @@ int main() {
 
   for(TEquation& e : typeChecker.tEquations) 
     e.print(std::cerr);
+
+  std::cout << "\n_____Infered Type_____" << std::endl;
+  typeChecker.getType(base->exprs.front(), typeChecker.unifyAll())->print(std::cerr);
+  std::cout << std::endl;
 
   return 0;
 }
