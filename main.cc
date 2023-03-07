@@ -6,28 +6,23 @@ extern int yyparse();
 extern AstE* result;
 
 int main() {
-
   yyparse();
+  if(!result) {
+    std::cout << "Please provide okay-ish input!" << std::endl;
+    exit(1);
+  }
 
   Typechecker typeChecker = Typechecker();
 
   Block* base = dynamic_cast<Block*>(result);
   SymTab symtab = SymTab();
 
-  typeChecker.assignTNames(base->exprs.front(), symtab);
-
-  std::cout << "______Assigned_Types______" << std::endl;
-  base->exprs.front()->print(std::cerr);
-
-  std::cout << "\n_____Equations_Assign_____" << std::endl;
-  typeChecker.genEquations(base->exprs.front());
-
-  for(TEquation& e : typeChecker.tEquations) 
-    e.print(std::cerr);
-
-  std::cout << "\n_____Infered Type_____" << std::endl;
-  typeChecker.getType(base->exprs.front(), typeChecker.unifyAll())->print(std::cerr);
-  std::cout << std::endl;
+  for(auto& e : base->exprs) {
+    typeChecker.assignTNames(e, symtab);
+    typeChecker.genEquations(e);
+    typeChecker.getType(e, typeChecker.unifyAll())->print(std::cerr);
+    std::cerr << std::endl;
+  }
 
   return 0;
 }

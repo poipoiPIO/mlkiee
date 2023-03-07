@@ -12,7 +12,8 @@ std::ostream& operator<<(std::ostream& os, const T& t) {
   return os;
 }
 
-template <typename V, typename = typename std::enable_if<std::is_base_of<V, T>::value>::type>
+template <typename V,
+  typename = typename std::enable_if<std::is_base_of<V, T>::value>::type>
 std::ostream& operator<<(std::ostream& os, const V& t) {
   t.print(os); return os;
 }
@@ -34,7 +35,11 @@ void TVar::print(std::ostream& os) const {
 TFoo::TFoo(T* arg, T* ret) : argType(arg), retType(ret) {}
 
 void TFoo::print(std::ostream& os) const {
-  os << "Function: "; argType->print(os); os << " -> "; argType->print(os);
+  os << "(";
+  argType->print(os);
+  os << " -> ";
+  argType->print(os);
+  os << ")";
 }
 
 TEquation::TEquation(std::string left, T* right, AstE* node)
@@ -202,9 +207,9 @@ void Typechecker::genFCallEEquations(AstFCall* FCallCheck) {
   genEquations(FCallCheck->value);
 
   tEquations.push_back(TEquation(
-        FCallCheck->type, 
+        FCallCheck->name->type, 
         new TFoo(stringToType(FCallCheck->name->type),
-          stringToType(FCallCheck->value->type)),
+          stringToType(FCallCheck->type)),
         FCallCheck));
 }
 
@@ -376,10 +381,9 @@ Substitution& Typechecker::unifyAll() {
   for (auto& e : tEquations) {
     std::cerr << "Trying to unify: ";
     e.print(std::cerr);
-    std::cerr << std::endl;
 
     try {
-      std::cerr << "Left:: " << e.left << std::endl << "right:: ";
+      std::cerr << "Left:: " << e.left << " | Right:: ";
       e.right->print(std::cerr);
       std::cerr << std::endl;
 
@@ -395,6 +399,7 @@ Substitution& Typechecker::unifyAll() {
     if(lookup != tSubst.end()) {
       std::cerr << "type unified to: ";
       lookup->second->print(std::cerr);
+      std::cerr << std::endl;
       std::cerr << std::endl;
     }
     

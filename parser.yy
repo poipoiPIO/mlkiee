@@ -31,7 +31,7 @@
 
 Program: Statement { result = $1; };
 
-Statement: Expr ';' 
+Statement: Expr ';' { $$ = new Block($1); }
   | Expr ';' Statement { $$ = new Block($1, $3); }
 ;
 

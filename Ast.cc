@@ -19,13 +19,13 @@ std::ostream& operator<<(std::ostream& os, const T& t) {
 }
 
 void AstVal::print(std::ostream& os) const {
-  os << "(AstVal :type " << type << " val: " << value << ")";
+  os << "(" << type << " " << value << ")";
 }
 
 AstUnary::AstUnary(const std::string& op, AstE* val) : op(op), value(val) {}
 
 void AstUnary::print(std::ostream& os) const { 
-  os << "(AstUnary type: " << type << " op: " << op << " value: ";
+  os << "(" << type << " op: " << op << " ";
   value->print(os);
   os << ")"; 
 }
@@ -34,9 +34,9 @@ AstBinary::AstBinary(const std::string& op, AstE* left, AstE* right)
   : op(op), left(left), right(right) {}
 
 void AstBinary::print(std::ostream& os) const {
-  os << "(AstBinary type: " << type << " op: " << op << " left: ";
+  os << "(" << type << " ";
   left->print(os); 
-  os << " right: ";
+  os << " " << op << " ";
   right->print(os);
   os << ")";
 }
@@ -46,7 +46,7 @@ void AstBinary::traverseChild(std::function<void(AstE*)> fun) { fun(left); fun(r
 AstAssign::AstAssign(const std::string& name, AstE* val) : value(val), name(name) {}
 
 void AstAssign::print(std::ostream& os) const {
-  os << "(AstAssign type: " << type << " name: " << name << " value: ";
+  os << "(" << type << " " << name << " = ";
   value->print(os);
   os << ")";
 }
@@ -54,9 +54,9 @@ void AstAssign::print(std::ostream& os) const {
 AstFunction::AstFunction(AstE* arg, AstE* val) : value(val), arg(arg) {}
 
 void AstFunction::print(std::ostream& os) const {
-  os << "(AstFunction type: " << type << " arg: ";
+  os << "(" << type << " ";
   arg->print(os);
-  os << " body: ";
+  os << " -> ";
   value->print(os);
   os << ")";
 }
@@ -64,9 +64,9 @@ void AstFunction::print(std::ostream& os) const {
 AstFCall::AstFCall(AstE* name, AstE* val) : value(val), name(name) {}
 
 void AstFCall::print(std::ostream& os) const {
-  os << "(AstFCall type: " << type << " name: ";
+  os << "(" << type << " ";
   name->print(os);
-  os << " value: ";
+  os << " . ";
   value->print(os);
   os << ")";
 }
@@ -75,11 +75,11 @@ AstIf::AstIf(AstE* cond, AstE* t_branch, AstE* f_branch):
   cond(cond), true_brunch(t_branch), false_brunch(f_branch) {}
 
 void AstIf::print(std::ostream& os) const { 
-  os << "(AstIf type: " << type << " cond: ";
+  os << "(" << type << " if ";
   cond->print(os); 
-  os << " true: ";
+  os << " ";
   true_brunch->print(os); 
-  os << " false: ";
+  os << " else: ";
   false_brunch->print(os);
   os << ")";
 }
