@@ -184,7 +184,9 @@ void Typechecker::genBinaryEEquations(AstBinary* BinaryCheck) {
       genEquations(c);
     });
 
-    auto arithm_binop = std::array<std::string, 4> {"+", "-", "*", "/"};
+    auto arithm_binop = std::array<std::string, 9> {
+      "+", "-", "*", "/", "EQ", "LESS", "MORE", "LESS_EQ", "MORE_EQ"
+    };
 
     if (std::find(std::begin(arithm_binop),
           std::end(arithm_binop), BinaryCheck->op) != std::end(arithm_binop)) {
@@ -344,7 +346,7 @@ Substitution& Typechecker::unifyVar(T* v, T* typeY, Substitution& subst) {
   } 
 
   if (checkOccurance(v, typeY, subst)) {
-    throw TypeError();
+    throw TypeError(); // TODO :: Global variable occurance
   }
 
   subst.insert({varX->type, typeY});

@@ -22,9 +22,11 @@
 %type<str> ATOM NUM 
 %type<expr> Program Statement Expr ArithmExpr ArithmVal 
 %type<expr> ArithmSubExpr BooleanExpr BooleanSubExpr Bool
+%type<expr> MetaValExpr SubMetaValExpr
 
 %token TRUE FALSE ATOM NUM
 %token NOT AND OR
+%token LE ME EQ LESS MORE
 %token ARROW IF ELSE LET
 
 %%
@@ -35,13 +37,22 @@ Statement: Expr ';' { $$ = new Block($1); }
   | Expr ';' Statement { $$ = new Block($1, $3); }
 ;
 
-Expr: ArithmExpr
-  | BooleanExpr
+Expr: MetaValExpr
   | ATOM '.' Expr { $$ = new AstFCall(new AstVal($1), $3); }
   | '\\' ATOM ARROW Expr { $$ = new AstFunction(new AstVal($2), $4); }
   | LET ATOM ARROW Expr { $$ = new AstAssign($2, $4); }
   | IF Expr ARROW Expr ELSE Expr { $$ = new AstIf($2, $4, $6); }
 ;
+
+MetaValExpr: SubMetaValExpr
+  | MetaValExpr EQ   SubMetaValExpr { $$ = new AstBinary("EQ", $1, $3); }
+  | MetaValExpr LESS SubMetaValExpr { $$ = new AstBinary("LESS", $1, $3); }
+  | MetaValExpr MORE SubMetaValExpr { $$ = new AstBinary("MORE", $1, $3); }
+  | MetaValExpr LE   SubMetaValExpr { $$ = new AstBinary("LESS_EQ", $1, $3); }
+  | MetaValExpr ME   SubMetaValExpr { $$ = new AstBinary("MORE_EQ", $1, $3); }
+;
+
+SubMetaValExpr: ArithmExpr | BooleanExpr; 
 
 ArithmExpr: ArithmSubExpr
   | ArithmExpr '+' ArithmSubExpr { $$ = new AstBinary("+", $1, $3); }

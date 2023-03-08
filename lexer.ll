@@ -20,6 +20,11 @@ false           return FALSE;
 not             return NOT;
 and             return AND;
 or              return OR;
+"<="            return LE;
+">="            return ME;
+"=="            return EQ;
+"<"             return LESS;
+">"             return MORE;
 
 [0-9]+          {
   yylval.str = strdup(yytext);

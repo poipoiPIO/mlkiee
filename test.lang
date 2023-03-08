@@ -1,6 +1,7 @@
-let foo ->
-  \x -> 12 + x;
 
-let y -> foo;
+let meow ->
+  \y ->
+    12 > y
+;
 
-y . 12;
+meow . true;
