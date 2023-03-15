@@ -5,6 +5,7 @@
 #include <ostream>
 #include <string>
 #include <array>
+#include "Utils.hh"
 
 T::~T() {};
 
@@ -64,12 +65,6 @@ Typechecker::Typechecker() {
 
 std::string Typechecker::getTName() {
   return std::string("type").append(std::to_string(typecounter++));
-}
-
-bool isNum(const std::string& val) {
-  try {std::stoi(val); } catch (...) {
-    return false;
-  } return true; 
 }
 
 template<typename V> 

@@ -38,7 +38,7 @@ Statement: Expr ';' { $$ = new Block($1); }
 ;
 
 Expr: MetaValExpr
-  | ATOM '.' Expr { $$ = new AstFCall(new AstVal($1), $3); }
+  | Expr '.' Expr { $$ = new AstFCall($1, $3); }
   | '\\' ATOM ARROW Expr { $$ = new AstFunction(new AstVal($2), $4); }
   | LET ATOM ARROW Expr { $$ = new AstAssign($2, $4); }
   | IF Expr ARROW Expr ELSE Expr { $$ = new AstIf($2, $4, $6); }
@@ -56,7 +56,7 @@ SubMetaValExpr: ArithmExpr | BooleanExpr;
 
 ArithmExpr: ArithmSubExpr
   | ArithmExpr '+' ArithmSubExpr { $$ = new AstBinary("+", $1, $3); }
-  | ArithmExpr '-' ArithmSubExpr { $$ = new AstBinary("+", $1, $3); }
+  | ArithmExpr '-' ArithmSubExpr { $$ = new AstBinary("-", $1, $3); }
 ;
 
 ArithmSubExpr: ArithmVal
